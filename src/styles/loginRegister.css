@@ -1,0 +1,16 @@
+.app-bg {
+  background-image: url('../assets/register-back.avif');
+  background-size: cover;
+  background-position: center;
+}
+.app-bg-register {
+  background-image: url('../assets/register-bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+.card{
+   background-color: rgba(0, 0, 0, 0.5);
+    color: "white";
+    border: "none";
+    border-Radius: "10px";
+}

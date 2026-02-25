@@ -1,0 +1,52 @@
+[
+  {
+    "id": 1,
+    "title": "Italian Bistro",
+    "desc": "Authentic Italian flavors with fresh ingredients.",
+    "bg": "resto1.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Spice Garden",
+    "desc": "Bold spices and rich traditional recipes.",
+    "bg": "resto2.jpg"
+  },
+  {
+    "id": 3,
+    "title": "Urban Cafe",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto3.avif"
+  },
+  {
+    "id": 4,
+    "title": "Urban Cafe",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto4.avif"
+  },
+   {
+    "id": 5,
+    "title": "Chinese Hub",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto5.avif"
+  },
+    {
+    "id": 6,
+    "title": "Bekary",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto6.avif"
+  },
+   {
+    "id": 7,
+    "title": "Santosh Dhaba",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto7.avif"
+  },
+   {
+    "id": 8,
+    "title": "Pizza Hut",
+    "desc": "Comfort food and quick bites for every mood.",
+    "bg": "resto8.avif"
+  }
+
+
+]

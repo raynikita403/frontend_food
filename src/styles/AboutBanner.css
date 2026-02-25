@@ -1,0 +1,29 @@
+.about-banner {
+  height: 70vh;
+  background-image: url("../assets//about-page/banner.jpg"); 
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+/* overlay */
+.about-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+.about-banner .container {
+  position: relative;
+  z-index: 1;
+}
+/*----------------------what we do ---------*/
+.what-we-do {
+  background-color: #343a40; 
+}
+
+.what-we-do .bg-secondary {
+  background-color: #495057 !important; 
+}
+
