@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 import Navbar from "../Components/Navbar";
 import Carousel from "../Components/Slider";
@@ -6,10 +7,29 @@ import CardsSection from "../Components/cards-sweets";
 import RestaurantsSection from "../Components/restaurant-list";
 import AboutUsSection from "../Components/about-us";
 import Footer from "../Components/footer";
+import ContactUs from "../Components/contactUs";
 
 import pizza from "../../assets/about-section.avif";
 
 const Home = () => {
+  const location = useLocation();
+
+  // ✅ Smooth scroll when URL contains #contact-us
+  useEffect(() => {
+    if (location.hash) {
+      const element = document.querySelector(location.hash);
+      if (element) {
+        const yOffset = -80; // adjust if navbar overlaps
+        const y =
+          element.getBoundingClientRect().top +
+          window.pageYOffset +
+          yOffset;
+
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+    }
+  }, [location]);
+
   return (
     <>
       <Navbar />
@@ -36,6 +56,7 @@ customers who trust us for their daily cravings and special occasions.`}
       />
 
       <RestaurantsSection />
+      <ContactUs />
       <Footer />
     </>
   );

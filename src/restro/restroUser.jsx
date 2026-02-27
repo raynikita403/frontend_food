@@ -18,14 +18,14 @@ function RestaurantDashboard() {
         <h4 className="text-warning">Restaurant Panel</h4>
  
         <button
-          className="btn btn-link text-white d-block text-start"
+          className="btn btn-link text-white d-block text-start text-decoration-none"
           onClick={() => setActivePage("products")}
         >
           Product List
         </button>
  
         <button
-          className="btn btn-link text-white d-block text-start"
+          className="btn btn-link text-white d-block text-start text-decoration-none"
           onClick={() => setActivePage("orders")}
         >
           Orders

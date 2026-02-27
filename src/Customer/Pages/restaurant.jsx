@@ -1,26 +1,20 @@
 import React, { useEffect, useState } from "react";
-import CommonCard from "./common-card";
+import CommonCard from "../Components/common-card";
+import Navbar from "../Components/Navbar";
+import Footer from "../Components/footer";
 
-const RestaurantsSection = () => {
+const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Configuration: 4 cards per row, 3 rows
-  const CARDS_PER_ROW = 4;
-  const ROWS = 3;
-  const MAX_CARDS = CARDS_PER_ROW * ROWS;
 
   useEffect(() => {
     fetch("http://localhost:8082/api/restaurant/all")
       .then((res) => res.json())
       .then((data) => {
-        // Show only active restaurants
         const activeRestaurants = data.filter(
           (res) => res.active === "active"
         );
-
-        // Limit to max cards
-        setRestaurants(activeRestaurants.slice(0, MAX_CARDS));
+        setRestaurants(activeRestaurants); 
         setLoading(false);
       })
       .catch((err) => {
@@ -30,10 +24,10 @@ const RestaurantsSection = () => {
   }, []);
 
   return (
+    <>
+    <Navbar/>
     <div className="container my-5">
-      <h2 className="mb-4 text-center">
-        Popular Restaurants Near You
-      </h2>
+      <h2 className="mb-4 text-center">All Restaurants</h2>
 
       {loading ? (
         <p className="text-center">Loading restaurants...</p>
@@ -42,7 +36,7 @@ const RestaurantsSection = () => {
           No restaurants available.
         </p>
       ) : (
-        <div className="row g-4 justify-content-center">
+        <div className="row g-4">
           {restaurants.map((item) => (
             <div key={item.id} className="col-12 col-md-3 col-lg-3">
               <CommonCard
@@ -60,7 +54,9 @@ const RestaurantsSection = () => {
         </div>
       )}
     </div>
+     <Footer/>
+    </>
   );
 };
 
-export default RestaurantsSection;
+export default RestaurantsPage;

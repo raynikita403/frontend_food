@@ -43,11 +43,11 @@ const Navbar = () => {
               <Link className="nav-link fw-semibold text-light" to="/about">About Us</Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link fw-semibold text-light" to="/restaurant">Restaurant</Link>
+              <Link className="nav-link fw-semibold text-light" to="/restaurants">Restaurant</Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link fw-semibold text-light" to="/contact">Contact Us</Link>
-            </li>
+           <Link className="nav-link fw-semibold text-light" to="/#contact-us">
+             Contact Us
+          </Link>
           </ul>
 
           {/* Right Icons */}

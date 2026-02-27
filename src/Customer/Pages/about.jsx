@@ -7,6 +7,7 @@ import WhatWeDo from "../Components/about-what-we-do";
 import AboutUsSection from "../Components/about-us";
 
 import pizza from "../../assets/about-section.avif";
+import ContactUs from "../Components/contactUs";
 
 const About = () => {
   return (
@@ -37,6 +38,7 @@ delicious meals right to your door.
         bgColor="bg-dark"
         showButton={false} 
       />
+      <ContactUs/>
 <Footer />
     </>
   );
