@@ -3,15 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import "../styles/loginRegister.css";
- 
+
 function CustomerLogin() {
   const navigate = useNavigate();
- 
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
- 
+
   const handleLogin = async () => {
-    // 🔹 Validation
     if (!username || !password) {
       Swal.fire({
         icon: "warning",
@@ -20,50 +19,44 @@ function CustomerLogin() {
       });
       return;
     }
- 
+
     try {
       const response = await axios.post(
         "http://localhost:8081/api/auth/login",
         { username, password }
       );
- 
-      const { token, roles, username: loggedUser } = response.data;
-       console.log("Full response:", response.data);
+
+      console.log("Full response:", response.data);
+
+      const token = response.data.token;
+      const roles = response.data.roles || [];
+
+      // 🔹 Safe username extraction with fallback
+      const loggedUser =
+        response.data.username ||
+        response.data.user?.username ||
+        username;
+
       const userRole = roles[0];
-       console.log("Role:", roles[0]);
-     
 
-      //  Save authentication details
+      // Save auth details
       localStorage.setItem("token", token);
-      console.log("token:", token);
       localStorage.setItem("role", userRole);
-      console.log("Role from backend:", userRole);
-
       localStorage.setItem("username", loggedUser);
- 
+
       Swal.fire({
         icon: "success",
         title: "Login Successful",
-        text: `Welcome ${username}!`,
+        text: `Welcome ${loggedUser}!`,
         timer: 1500,
         showConfirmButton: false,
       }).then(() => {
- 
-       if (userRole === "ROLE_ADMIN") {
-          navigate("/admin");
-        }
-      else if (userRole === "ROLE_RESTAURANT") {
-        navigate("/restro");
-      }
-      else if (userRole === "ROLE_USER") {
-      navigate("/");//home page
-      }
-      else {
-      navigate("/login");
-      }
- 
+        if (userRole === "ROLE_ADMIN") navigate("/admin");
+        else if (userRole === "ROLE_RESTAURANT") navigate("/restro");
+        else if (userRole === "ROLE_USER") navigate("/");
+        else navigate("/login");
       });
- 
+
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -72,7 +65,7 @@ function CustomerLogin() {
       });
     }
   };
- 
+
   return (
     <div className="app-bg vh-100 d-flex justify-content-center align-items-center">
       <div
@@ -80,10 +73,10 @@ function CustomerLogin() {
         style={{ minWidth: "350px", minHeight: "400px" }}
       >
         <h3 className="text-center text-white mb-3">Login</h3>
- 
+
         <form onSubmit={(e) => e.preventDefault()}>
           <div className="mb-3">
-            <label className="form-label text-white">Username</label>
+            <label className="form-label text-white">User Email</label>
             <input
               type="text"
               className="form-control"
@@ -92,7 +85,7 @@ function CustomerLogin() {
               onChange={(e) => setUsername(e.target.value)}
             />
           </div>
- 
+
           <div className="mb-3">
             <label className="form-label text-white">Password</label>
             <input
@@ -103,7 +96,7 @@ function CustomerLogin() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
- 
+
           <div className="d-grid mt-4">
             <button
               type="button"
@@ -112,7 +105,7 @@ function CustomerLogin() {
             >
               Login
             </button>
- 
+
             <div className="text-center mt-2">
               <span className="text-white">Don't have an account? </span>
               <Link to="/register" className="text-danger text-decoration-none">
@@ -125,7 +118,5 @@ function CustomerLogin() {
     </div>
   );
 }
- 
+
 export default CustomerLogin;
- 
- 

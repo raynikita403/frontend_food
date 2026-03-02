@@ -11,7 +11,7 @@ const AboutUsSection = ({
   bgColor = "bg-warning",
   linkText = "Know more About Us",
   linkTo = "/about",
-  showButton = true, // <-- new prop to hide/show button
+  showButton = true, 
 }) => {
   return (
     <div className={`container-fluid ${bgColor} py-5`}>

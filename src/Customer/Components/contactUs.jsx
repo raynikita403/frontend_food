@@ -38,7 +38,7 @@ const ContactUs = () => {
               We’d Love to Hear From You 
             </h2>
             <p className="text-center text-white">
-              Have a question or feedback? Drop us a message and we’ll get back
+              Have a question or Issues? Drop us a message and we’ll get back
               to you soon.
             </p>
 
