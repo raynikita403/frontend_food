@@ -181,7 +181,7 @@ function AdminDashboard() {
               }`}
               onClick={() => setActivePage("addRestaurant")}
             >
-              Add Restaurant
+              Restaurant List
             </button>
 
             <button
