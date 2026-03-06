@@ -1,39 +1,78 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import axios from "axios";
 
 function RestaurantProducts() {
   const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     price: "",
-    status: "active",
+    status: true,
     image: null,
-    category: "Veg",
-    subCategory: "Starters",
+    category: "",
+    subCategory: "",
   });
 
-  const categories = ["Veg", "Non-Veg"];
-  const subCategories = [
-    "Starters",
-    "Soup",
-    "Curries",
-    "Rice and Biryani",
-    "Roti and Breads",
-    "Sweets",
-    "Beverage",
-  ];
+  const [preview, setPreview] = useState(null);
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
+    fetchSubCategories();
   }, []);
 
   const fetchProducts = async () => {
     try {
-      const res = await api.get("/restaurant/products");
+      const res = await axios.get(
+        "http://localhost:8082/api/menu/restaurant/products",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setProducts(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:8082/api/menu/categories",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCategories(res.data);
+
+      if (res.data.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          category: res.data[0].name,
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchSubCategories = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:8082/api/menu/subcategories",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSubCategories(res.data);
+
+      if (res.data.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          subCategory: res.data[0].name,
+        }));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -42,231 +81,361 @@ function RestaurantProducts() {
   const handleAddProduct = async () => {
     try {
       const data = new FormData();
+
       data.append("name", formData.name);
       data.append("description", formData.description);
       data.append("price", formData.price);
       data.append("status", formData.status);
       data.append("category", formData.category);
       data.append("subCategory", formData.subCategory);
-      if (formData.image) data.append("image", formData.image);
 
-      await api.post("/restaurant/products", data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      if (formData.image) {
+        data.append("image", formData.image);
+      }
 
-      Swal.fire("Success", "Product Added", "success");
+      await axios.post(
+        "http://localhost:8082/api/menu/restaurant/products",
+        data,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      Swal.fire("Success", "Product Added Successfully", "success");
+
       setShowModal(false);
+      fetchProducts();
+
       setFormData({
         name: "",
         description: "",
         price: "",
-        status: "active",
+        status: true,
         image: null,
-        category: "Veg",
-        subCategory: "Starters",
+        category: categories[0]?.name || "",
+        subCategory: subCategories[0]?.name || "",
       });
-      fetchProducts();
+
+      setPreview(null);
     } catch (err) {
+      console.error(err);
       Swal.fire("Error", "Could not add product", "error");
     }
   };
 
-  return (
-    <div style={{ position: "relative", minHeight: "80vh" }}>
-      <h4 className="mb-3">My Products</h4>
+  const toggleStatus = async (id) => {
+    try {
+      await axios.put(
+        `http://localhost:8082/api/menu/toggle-status/${id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <div className="container mt-4">
+
+      <h4 className="text-center mb-4">My Products</h4>
+
+      {/* PRODUCT CARDS */}
       <div className="row">
         {products.map((product) => (
-          <div className="col-md-4 mb-3" key={product.id}>
-            <div className="card shadow-sm">
+          <div className="col-md-4 mb-4" key={product.id}>
+            <div
+              className="card shadow-lg border-0 h-100"
+              style={{
+                borderRadius: "18px",
+                overflow: "hidden",
+                transition: "0.3s",
+              }}
+            >
               <img
-                src={`http://localhost:8081/product-images/${product.id}`}
-                className="card-img-top"
-                alt=""
-                style={{ height: "200px", objectFit: "cover" }}
+                src={
+                  product.imageBase64
+                    ? `data:image/jpeg;base64,${product.imageBase64}`
+                    : "https://via.placeholder.com/200"
+                }
+                alt={product.name}
+                style={{
+                  height: "240px",
+                  objectFit: "cover",
+                }}
               />
-              <div className="card-body">
+
+              <div
+                className="card-body"
+                style={{
+                  background:
+                    "linear-gradient(135deg,#1f1f1f,#2b2b2b)",
+                  color: "#fff",
+                }}
+              >
                 <h5 className="fw-bold">{product.name}</h5>
-                <p>{product.description}</p>
-                <p>₹ {product.price}</p>
-                <p>
-                  <span className={`badge ${product.status === "active" ? "bg-success" : "bg-danger"}`}>
-                    {product.status.toUpperCase()}
-                  </span>
-                </p>
-                <p>
-                  <small>
-                    {product.category} | {product.subCategory}
-                  </small>
-                </p>
+
+                <p className="small">{product.description}</p>
+
+                <h6 className="text-success fw-bold">
+                  ₹ {product.price}
+                </h6>
+
+                <span
+                  className={`badge ${
+                    product.status ? "bg-success" : "bg-danger"
+                  }`}
+                >
+                  {product.status
+                    ? "Available"
+                    : "Unavailable"}
+                </span>
+
+                <div className="small text-muted mt-2">
+                  {product.category} • {product.subCategory}
+                </div>
+
+                <button
+                  className={`btn btn-sm mt-3 ${
+                    product.status
+                      ? "btn-danger"
+                      : "btn-success"
+                  }`}
+                  onClick={() => toggleStatus(product.id)}
+                >
+                  {product.status
+                    ? "Mark Unavailable"
+                    : "Mark Available"}
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Fixed Add Button */}
+      {/* FLOATING ADD BUTTON */}
       <button
         onClick={() => setShowModal(true)}
         style={{
           position: "fixed",
-          bottom: "30px",
-          right: "30px",
-          width: "60px",
-          height: "60px",
+          bottom: "35px",
+          right: "35px",
+          width: "65px",
+          height: "65px",
           borderRadius: "50%",
-          backgroundColor: "green",
+          background:
+            "linear-gradient(135deg,#00c853,#009624)",
           color: "#fff",
-          fontSize: "28px",
+          fontSize: "30px",
           border: "none",
-          boxShadow: "0 6px 10px rgba(0,0,0,0.4)",
-          cursor: "pointer",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
         }}
-        title="Add Product"
       >
         +
       </button>
 
-      {/* Modal */}
+      {/* ADD PRODUCT MODAL */}
       {showModal && (
         <div
           className="modal d-block"
           style={{
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(0,0,0,0.7)",
+            backdropFilter: "blur(5px)",
           }}
         >
           <div className="modal-dialog modal-lg">
+
             <div
-              className="modal-content shadow-lg"
+              className="modal-content p-4"
               style={{
                 borderRadius: "20px",
+                backgroundImage:
+                  "url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                position: "relative",
                 overflow: "hidden",
               }}
             >
-              <div className="row g-0">
-                {/* Left Side Image */}
-                <div
-                  className="col-md-5 d-none d-md-block"
-                  style={{
-                    backgroundImage:
-                      "url('https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=800&q=80')",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    minHeight: "100%",
-                  }}
-                ></div>
 
-                {/* Right Side Form */}
-                <div className="col-md-7 p-4" style={{ backgroundColor: "#f8f9fa" }}>
-                  <h6 className="fw-bold mb-3 text-center text-warning">Add Product</h6>
+              {/* DARK OVERLAY */}
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: "rgba(0,0,0,0.65)",
+                  borderRadius: "20px",
+                }}
+              ></div>
 
-                  <input
-                    className="form-control mb-2 rounded-pill shadow-sm"
-                    placeholder="Name"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                  />
+              <div style={{ position: "relative", zIndex: 2 }}>
 
-                  <input
-                    className="form-control mb-2 rounded-pill shadow-sm"
-                    placeholder="Description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                  />
+                <h4 className="text-center text-white fw-bold mb-4">
+                  Add Product
+                </h4>
 
-                  <input
-                    type="number"
-                    className="form-control mb-2 rounded-pill shadow-sm"
-                    placeholder="Price"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price: e.target.value })
-                    }
-                  />
+                <div className="row">
 
-                  {/* Status */}
-                  <div className="mb-2">
-                    <label className="me-2 fw-semibold">Status:</label>
-                    {["active", "inactive"].map((status) => (
-                      <div key={status} className="form-check form-check-inline">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="status"
-                          value={status}
-                          checked={formData.status === status}
-                          onChange={(e) =>
-                            setFormData({ ...formData, status: e.target.value })
-                          }
-                        />
-                        <label className="form-check-label">{status}</label>
-                      </div>
-                    ))}
-                  </div>
+                  {/* FORM */}
+                  <div className="col-md-7">
 
-                  {/* Category & Sub-Category */}
-                  <div className="d-flex gap-2 mb-2">
+                    <input
+                      className="form-control mb-3"
+                      placeholder="Product Name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          name: e.target.value,
+                        })
+                      }
+                    />
+
+                    <textarea
+                      className="form-control mb-3"
+                      rows="3"
+                      placeholder="Description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+
+                    <input
+                      type="number"
+                      className="form-control mb-3"
+                      placeholder="Price"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price: e.target.value,
+                        })
+                      }
+                    />
+
                     <select
-                      className="form-select rounded-pill shadow-sm"
+                      className="form-select mb-3"
                       value={formData.category}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
+                        setFormData({
+                          ...formData,
+                          category: e.target.value,
+                        })
                       }
                     >
                       {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.id}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>
 
                     <select
-                      className="form-select rounded-pill shadow-sm"
+                      className="form-select mb-3"
                       value={formData.subCategory}
                       onChange={(e) =>
-                        setFormData({ ...formData, subCategory: e.target.value })
+                        setFormData({
+                          ...formData,
+                          subCategory: e.target.value,
+                        })
                       }
                     >
                       {subCategories.map((sub) => (
-                        <option key={sub} value={sub}>
-                          {sub}
+                        <option key={sub.id}>
+                          {sub.name}
                         </option>
                       ))}
                     </select>
+
+                    <div className="d-flex gap-2">
+
+                      <button
+                        className="btn btn-outline-light w-50"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        className="btn btn-success w-50"
+                        onClick={handleAddProduct}
+                      >
+                        Save Product
+                      </button>
+
+                    </div>
                   </div>
 
-                  {/* Image */}
-                  <input
-                    type="file"
-                    className="form-control mb-3 rounded-pill shadow-sm"
-                    onChange={(e) =>
-                      setFormData({ ...formData, image: e.target.files[0] })
-                    }
-                  />
+                  {/* IMAGE UPLOAD */}
+                  <div className="col-md-5">
 
-                  {/* Buttons */}
-                  <div className="d-flex justify-content-end mt-2 gap-2">
-                    <button
-                      className="btn btn-secondary rounded-pill px-4"
-                      onClick={() => setShowModal(false)}
+                    <div
+                      style={{
+                        border: "2px dashed #fff",
+                        borderRadius: "16px",
+                        padding: "20px",
+                        textAlign: "center",
+                        background: "rgba(255,255,255,0.1)",
+                      }}
                     >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn btn-success rounded-pill px-4"
-                      onClick={handleAddProduct}
-                    >
-                      Save
-                    </button>
+
+                      {preview ? (
+                        <img
+                          src={preview}
+                          alt="preview"
+                          style={{
+                            width: "100%",
+                            height: "220px",
+                            objectFit: "cover",
+                            borderRadius: "10px",
+                            marginBottom: "10px",
+                          }}
+                        />
+                      ) : (
+                        <p className="text-white">
+                          Upload Product Image
+                        </p>
+                      )}
+
+                      <input
+                        type="file"
+                        className="form-control"
+                        onChange={(e) => {
+                          setFormData({
+                            ...formData,
+                            image: e.target.files[0],
+                          });
+
+                          setPreview(
+                            URL.createObjectURL(
+                              e.target.files[0]
+                            )
+                          );
+                        }}
+                      />
+
+                    </div>
+
                   </div>
+
                 </div>
+
               </div>
+
             </div>
+
           </div>
         </div>
       )}

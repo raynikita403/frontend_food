@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 
 function AdminDashboard() {
-  const [activePage, setActivePage] = useState("addRestaurant");
+  const [activePage, setActivePage] = useState("manageRestaurant");
+  const [restaurants, setRestaurants] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const [restaurantData, setRestaurantData] = useState({
     name: "",
@@ -14,13 +18,15 @@ function AdminDashboard() {
     active: "active",
   });
 
-  const [restaurants, setRestaurants] = useState([]);
-  const [profileOpen, setProfileOpen] = useState(false);
-
   const token = localStorage.getItem("token");
   const username = localStorage.getItem("username") || "Admin";
 
-  // Handle input change
+  useEffect(() => {
+    if (activePage === "manageRestaurant") {
+      fetchRestaurants();
+    }
+  }, [activePage]);
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === "image") {
@@ -30,17 +36,105 @@ function AdminDashboard() {
     }
   };
 
-  // Logout
+  // ✅ Logout with confirmation
   const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/login";
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You will be logged out!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, Logout",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+    });
   };
 
-  // Add Restaurant
+  // ✅ Fetch restaurants
+  const fetchRestaurants = async () => {
+    try {
+      const response = await fetch("http://localhost:8082/api/restaurant/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        Swal.fire("Error", "Failed to fetch restaurants", "error");
+        return;
+      }
+
+      const data = await response.json();
+      setRestaurants(data);
+    } catch (error) {
+      Swal.fire("Error", "Server error while fetching", "error");
+    }
+  };
+
+  // ✅ Toggle Active/Inactive with confirmation
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "active" ? "inactive" : "active";
+
+    const confirmResult = await Swal.fire({
+      title: `Are you sure?`,
+      text: `You want to ${newStatus} this restaurant?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      confirmButtonText: "Yes, Confirm",
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8082/api/restaurant/status/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ active: newStatus }),
+        }
+      );
+
+      if (response.ok) {
+        fetchRestaurants();
+
+        Swal.fire({
+          icon: "success",
+          title:
+            newStatus === "active"
+              ? "Restaurant Activated!"
+              : "Restaurant Deactivated!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      } else {
+        Swal.fire("Error", "Failed to update status", "error");
+      }
+    } catch (error) {
+      Swal.fire("Error", "Server error", "error");
+    }
+  };
+
+  // ✅ Add Restaurant
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      // Create Auth User
+      Swal.fire({
+        title: "Adding Restaurant...",
+        text: "Please wait",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      // Step 1: Register Auth
       const authResponse = await fetch(
         "http://localhost:8081/api/auth/register?type=RESTO",
         {
@@ -58,23 +152,25 @@ function AdminDashboard() {
       );
 
       if (!authResponse.ok) {
-        const errorText = await authResponse.text();
-        alert(errorText);
+        Swal.close();
+        Swal.fire("Error", await authResponse.text(), "error");
         return;
       }
 
       const authResult = await authResponse.json();
-      const restaurantUserId = authResult.id;
 
-      // Create Restaurant Profile
+      // Step 2: Register Restaurant
       const formData = new FormData();
       formData.append("name", restaurantData.name);
       formData.append("description", restaurantData.description);
       formData.append("timing", restaurantData.timing);
       formData.append("location", restaurantData.location);
       formData.append("active", restaurantData.active);
-      formData.append("ownerId", restaurantUserId);
-      if (restaurantData.image) formData.append("image", restaurantData.image);
+      formData.append("ownerId", authResult.id);
+
+      if (restaurantData.image) {
+        formData.append("image", restaurantData.image);
+      }
 
       const restaurantResponse = await fetch(
         "http://localhost:8082/api/restaurant/register",
@@ -85,13 +181,16 @@ function AdminDashboard() {
         }
       );
 
+      Swal.close();
+
       if (!restaurantResponse.ok) {
-        const errorText = await restaurantResponse.text();
-        alert(errorText);
+        Swal.fire("Error", await restaurantResponse.text(), "error");
         return;
       }
 
-      alert("Restaurant registered successfully!");
+      setShowModal(false);
+      fetchRestaurants();
+
       setRestaurantData({
         name: "",
         email: "",
@@ -102,70 +201,40 @@ function AdminDashboard() {
         location: "",
         active: "active",
       });
-    } catch (error) {
-      console.error("Server error:", error);
-      alert("Server error. Check backend.");
-    }
-  };
 
-  // Fetch Restaurants
-  const fetchRestaurants = async () => {
-    try {
-      const response = await fetch("http://localhost:8082/api/restaurant/all", {
-        headers: { Authorization: `Bearer ${token}` },
+      Swal.fire({
+        icon: "success",
+        title: "Restaurant Added Successfully!",
+        text: "The restaurant has been registered.",
+        confirmButtonColor: "#ffc107",
       });
-      const data = await response.json();
-      if (response.ok) setRestaurants(data);
     } catch (error) {
-      console.error("Error fetching restaurants:", error);
-    }
-  };
-
-  // Toggle Status
-  const toggleStatus = async (id, currentStatus) => {
-    try {
-      const response = await fetch(
-        `http://localhost:8082/api/restaurant/status/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            active: currentStatus === "active" ? "inactive" : "active",
-          }),
-        }
-      );
-      if (response.ok) fetchRestaurants();
-    } catch (error) {
-      console.error("Error updating status:", error);
+      Swal.close();
+      Swal.fire("Error", "Server error occurred", "error");
     }
   };
 
   return (
     <div className="container-fluid p-0">
-      <div className="row g-0 min-vh-100 flex-column flex-md-row">
-        {/* Sidebar */}
-        <div className="col-12 col-md-2 bg-dark text-white p-4 d-flex flex-column justify-content-between">
+      <div className="row g-0 min-vh-100">
+        {/* SIDEBAR */}
+        <div className="col-md-2 bg-dark text-white p-4 d-flex flex-column justify-content-between">
           <div>
-            {/* Profile Section */}
-            <div className="d-flex flex-column align-items-center mb-4">
+            <div className="text-center mb-4">
               <div
-                className="rounded-circle bg-warning text-dark d-flex justify-content-center align-items-center fw-bold mb-2"
-                style={{ width: "60px", height: "60px", fontSize: "24px", cursor: "pointer" }}
+                className="rounded-circle bg-warning text-dark d-flex justify-content-center align-items-center fw-bold mx-auto mb-2"
+                style={{ width: 60, height: 60, cursor: "pointer" }}
                 onClick={() => setProfileOpen(!profileOpen)}
               >
                 {username.charAt(0).toUpperCase()}
               </div>
               <h6 className="text-warning">{username}</h6>
-              <small className="text-light">Admin</small>
+              <small>Admin</small>
 
-              {/* Dropdown */}
               {profileOpen && (
-                <div className="mt-2 bg-secondary rounded p-2 w-100 text-center">
+                <div className="mt-2">
                   <button
-                    className="btn btn-sm btn-danger w-100"
+                    className="btn btn-danger btn-sm w-100"
                     onClick={handleLogout}
                   >
                     Logout
@@ -174,32 +243,15 @@ function AdminDashboard() {
               )}
             </div>
 
-            {/* Menu Buttons */}
             <button
-              className={`btn btn-link text-white d-flex align-items-center ms-2 text-decoration-none ${
-                activePage === "addRestaurant" ? "fw-bold text-warning" : ""
-              }`}
-              onClick={() => setActivePage("addRestaurant")}
-            >
-              Restaurant List
-            </button>
-
-            <button
-              className={`mt-3 btn btn-link text-white d-block text-start ms-2 text-decoration-none ${
-                activePage === "manageRestaurant" ? "fw-bold text-warning" : ""
-              }`}
-              onClick={() => {
-                setActivePage("manageRestaurant");
-                fetchRestaurants();
-              }}
+              className="btn btn-link text-white d-block text-start text-decoration-none"
+              onClick={() => setActivePage("manageRestaurant")}
             >
               Manage Restaurant
             </button>
 
             <button
-              className={`mt-3 btn btn-link text-white d-block text-start ms-2 text-decoration-none ${
-                activePage === "manageCustomer" ? "fw-bold text-warning" : ""
-              }`}
+              className="btn btn-link text-white d-block text-start text-decoration-none"
               onClick={() => setActivePage("manageCustomer")}
             >
               Manage Customer
@@ -207,203 +259,193 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="col-12 col-md-10 flex-grow-1 p-4 bg-light d-flex justify-content-center align-items-start">
-          {/* ADD RESTAURANT FORM */}
-          {activePage === "addRestaurant" && (
-            <div className="card w-75 w-md-75 w-lg-50 p-4 bg-dark shadow-sm">
-              <h3 className="text-center text-warning fw-bold mb-4">Add New Restaurant</h3>
+        {/* MAIN CONTENT */}
+        <div className="col-md-10 bg-light p-4 position-relative">
+          {activePage === "manageRestaurant" && (
+            <>
+              <h3 className="fw-bold mb-4">Restaurants</h3>
 
-              <form onSubmit={handleSubmit}>
-                <div className="row">
-                  {/* Restaurant Name */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Restaurant Name</label>
+              <div className="row">
+                {restaurants.map((res) => (
+                  <div className="col-md-4 mb-4" key={res.id}>
+                    <div className="card shadow-lg border-0 rounded-4 overflow-hidden">
+                      <img
+                        src={
+                          res.imageBase64
+                            ? `data:image/jpeg;base64,${res.imageBase64}`
+                            : "https://images.unsplash.com/photo-1555396273-367ea4eb4db5"
+                        }
+                        className="card-img-top"
+                        style={{ height: 400, objectFit: "cover" }}
+                        alt=""
+                      />
+                      <div className="card-body bg-dark text-white">
+                        <h5 className="fw-bold">{res.name}</h5>
+                        <p className=" small text-white">
+                          {res.description}
+                        </p>
+                        <p className="small">📍 {res.location}</p>
+                        <p className="small">⏰ {res.timing}</p>
+
+                        <span
+                          className={`badge ${
+                            res.active === "active"
+                              ? "bg-success"
+                              : "bg-danger"
+                          }`}
+                        >
+                          {res.active}
+                        </span>
+
+                        <div className="mt-3">
+                          <button
+                            className={`btn btn-sm ${
+                              res.active === "active"
+                                ? "btn-danger"
+                                : "btn-success"
+                            }`}
+                            onClick={() =>
+                              toggleStatus(res.id, res.active)
+                            }
+                          >
+                            {res.active === "active"
+                              ? "Deactivate"
+                              : "Activate"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  position: "fixed",
+                  bottom: 30,
+                  right: 30,
+                  width: 60,
+                  height: 60,
+                  borderRadius: "50%",
+                  backgroundColor: "#ffc107",
+                  fontSize: 28,
+                  border: "none",
+                }}
+              >
+                +
+              </button>
+            </>
+          )}
+
+          {activePage === "manageCustomer" && (
+            <h3>Manage Customer (Coming Soon)</h3>
+          )}
+        </div>
+      </div>
+
+      {/* MODAL (UNCHANGED FORM) */}
+           {showModal && (
+        <div
+          className="modal d-block"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+        >
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content rounded-4 overflow-hidden">
+              <div className="row g-0">
+                <div
+                  className="col-md-5 d-none d-md-block"
+                  style={{
+                    backgroundImage:
+                      "url('https://images.unsplash.com/photo-1552566626-52f8b828add9')",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                ></div>
+
+                <div className="col-md-7 p-4 bg-light">
+                  <h5 className="text-center fw-bold text-warning mb-3">
+                    Add Restaurant
+                  </h5>
+
+                  <form onSubmit={handleSubmit}>
                     <input
-                      type="text"
-                      className="form-control rounded-3"
+                      className="form-control mb-2 rounded-pill"
+                      placeholder="Name"
                       name="name"
-                      placeholder="Enter name"
                       value={restaurantData.name}
                       onChange={handleChange}
                       required
                     />
-                  </div>
-
-                  {/* Email */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Email</label>
                     <input
                       type="email"
-                      className="form-control rounded-3"
+                      className="form-control mb-2 rounded-pill"
+                      placeholder="Email"
                       name="email"
-                      placeholder="Enter email"
                       value={restaurantData.email}
                       onChange={handleChange}
                       required
                     />
-                  </div>
-
-                  {/* Password */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Password</label>
                     <input
                       type="password"
-                      className="form-control rounded-3"
+                      className="form-control mb-2 rounded-pill"
+                      placeholder="Password"
                       name="password"
-                      placeholder="Enter password"
                       value={restaurantData.password}
                       onChange={handleChange}
                       required
                     />
-                  </div>
-
-                  {/* Timing */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Timing</label>
                     <input
-                      type="text"
-                      className="form-control rounded-3"
+                      className="form-control mb-2 rounded-pill"
+                      placeholder="Timing"
                       name="timing"
-                      placeholder="10:00 AM - 11:00 PM"
                       value={restaurantData.timing}
                       onChange={handleChange}
                     />
-                  </div>
-
-                  {/* Location */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Location</label>
                     <input
-                      type="text"
-                      className="form-control rounded-3"
+                      className="form-control mb-2 rounded-pill"
+                      placeholder="Location"
                       name="location"
-                      placeholder="Enter location"
                       value={restaurantData.location}
                       onChange={handleChange}
                     />
-                  </div>
-
-                  {/* Image */}
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold text-white">Restaurant Image</label>
+                    <textarea
+                      className="form-control mb-2 rounded-4"
+                      placeholder="Description"
+                      name="description"
+                      value={restaurantData.description}
+                      onChange={handleChange}
+                    />
                     <input
                       type="file"
-                      className="form-control rounded-3"
+                      className="form-control mb-3 rounded-pill"
                       name="image"
                       onChange={handleChange}
                     />
-                  </div>
 
-                  {/* Description */}
-                  <div className="col-12 mb-3">
-                    <label className="form-label fw-semibold text-white">Description</label>
-                    <textarea
-                      className="form-control rounded-3"
-                      name="description"
-                      placeholder="Write something about the restaurant..."
-                      value={restaurantData.description}
-                      onChange={handleChange}
-                      rows={3}
-                    />
-                  </div>
-
-                  {/* Active Status */}
-                  <div className="col-12 mb-4">
-                    <label className="form-label fw-semibold d-block mb-2 text-white">Active Status</label>
-                    <div className="d-flex gap-4">
-                      <div className="form-check">
-                        <input
-                          type="radio"
-                          className="form-check-input"
-                          name="active"
-                          value="active"
-                          checked={restaurantData.active === "active"}
-                          onChange={handleChange}
-                        />
-                        <label className="form-check-label text-white">Active</label>
-                      </div>
-                      <div className="form-check">
-                        <input
-                          type="radio"
-                          className="form-check-input"
-                          name="active"
-                          value="inactive"
-                          checked={restaurantData.active === "inactive"}
-                          onChange={handleChange}
-                        />
-                        <label className="form-check-label text-white">Inactive</label>
-                      </div>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-secondary rounded-pill"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn btn-warning rounded-pill"
+                      >
+                        Save
+                      </button>
                     </div>
-                  </div>
+                  </form>
                 </div>
-
-                <button type="submit" className="btn btn-warning w-100 fw-bold rounded-3 py-2">
-                  Add Restaurant
-                </button>
-              </form>
+              </div>
             </div>
-          )}
-
-          {/* MANAGE RESTAURANT TABLE */}
-          {activePage === "manageRestaurant" && (
-            <div className="container">
-              <h2 className="mb-4">Manage Restaurants</h2>
-              <table className="table table-bordered table-striped" style={{ fontSize: "10px" }}>
-                <thead className="table-dark">
-                  <tr className="text-center">
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Image</th>
-                    <th>Description</th>
-                    <th>Timing</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {restaurants.map((res) => (
-                    <tr key={res.id} className="text-center">
-                      <td>{res.name}</td>
-                      <td>{res.email}</td>
-                      <td>
-                        {res.imageBase64 && (
-                          <img
-                            src={`data:image/jpeg;base64,${res.imageBase64}`}
-                            alt={res.name}
-                            width="80"
-                            height="60"
-                          />
-                        )}
-                      </td>
-                      <td>{res.description}</td>
-                      <td>{res.timing}</td>
-                      <td>{res.location}</td>
-                      <td>
-                        <span className={`badge ${res.active === "active" ? "bg-success" : "bg-danger"}`}>
-                          {res.active}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          style={{ fontSize: "10px" }}
-                          className={`btn btn-sm ${res.active === "active" ? "btn-danger" : "btn-success"}`}
-                          onClick={() => toggleStatus(res.id, res.active)}
-                        >
-                          {res.active === "active" ? "Deactivate" : "Activate"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activePage === "manageCustomer" && <h2>Manage Customer</h2>}
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }
