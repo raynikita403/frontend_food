@@ -10,6 +10,7 @@ import AdminDashboard from "./admin/admin";
 import RestaurantDashboard from "./restro/restroUser";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import RestaurantMenu from "./restro/restroMenu";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/restaurants" element={<RestaurantsPage />} /> 
+        <Route path="/restaurant/:id" element={<RestaurantMenu />} />
         <Route path="/contact" element={<ContactUs/>} /> 
         <Route path="/login" element={<CustomerLogin />} />
         <Route path="/register" element={<CustomerRegistration />} />

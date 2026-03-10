@@ -1,12 +1,13 @@
 import React from "react";
+import "../../styles/cardEffect.css"; // Make sure CSS is imported
 
 const CommonCard = ({ title, desc, bg, overlay, showOverlay = true }) => {
   return (
     <div
-      className="position-relative rounded overflow-hidden"
+      className="common-card position-relative rounded overflow-hidden"
       style={{ height: "350px" }}
     >
-      {/* Background */}
+      {/* Background Image */}
       <img
         src={bg}
         alt={title}
@@ -14,8 +15,8 @@ const CommonCard = ({ title, desc, bg, overlay, showOverlay = true }) => {
         style={{ objectFit: "cover" }}
       />
 
-      {/* Overlay Image (ONLY when showOverlay = true) */}
-      {showOverlay && (
+      {/* Optional Overlay Image */}
+      {showOverlay && overlay && (
         <img
           src={overlay}
           alt={title}
@@ -30,7 +31,7 @@ const CommonCard = ({ title, desc, bg, overlay, showOverlay = true }) => {
         />
       )}
 
-      {/* Text */}
+      {/* Text Overlay */}
       <div
         className="position-absolute bottom-0 start-0 p-3 text-white"
         style={{ backgroundColor: "rgba(0,0,0,0.5)", width: "100%" }}

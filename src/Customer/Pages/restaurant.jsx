@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import CommonCard from "../Components/common-card";
 import Navbar from "../Components/Navbar";
 import Footer from "../Components/footer";
+import "../../styles/cardEffect.css";
 
 const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState([]);

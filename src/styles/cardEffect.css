@@ -1,0 +1,10 @@
+/* Universal scale-up effect for all cards */
+.common-card {
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.common-card:hover {
+  transform: scale(1.05);
+  z-index: 2; /* optional: makes hovered card pop above others */
+}

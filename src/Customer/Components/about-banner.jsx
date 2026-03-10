@@ -11,9 +11,9 @@ const AboutBanner = () => {
              Order what you love. <br />
              We’ll bring it to you.
             </p>
-            <button className="btn btn-warning px-4 py-2 rounded-pill">
-              Learn More
-            </button>
+            <h6 className="text-secondary">“Feeling hungry? Order whatever you want and treat yourself today.
+From your favorite snacks to full meals, get it delivered hot and fresh.
+Satisfy your cravings anytime, anywhere, with just a few taps!”</h6>
           </div>
         </div>
       </div>

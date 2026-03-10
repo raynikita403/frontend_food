@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CommonCard from "./common-card";
 
 const RestaurantsSection = () => {
+
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
 
   // Configuration: 4 cards per row, 3 rows
   const CARDS_PER_ROW = 4;
@@ -14,23 +18,25 @@ const RestaurantsSection = () => {
     fetch("http://localhost:8082/api/restaurant/all")
       .then((res) => res.json())
       .then((data) => {
-        // Show only active restaurants
+
         const activeRestaurants = data.filter(
           (res) => res.active === "active"
         );
 
-        // Limit to max cards
         setRestaurants(activeRestaurants.slice(0, MAX_CARDS));
         setLoading(false);
+
       })
       .catch((err) => {
         console.error("Error fetching restaurants:", err);
         setLoading(false);
       });
+
   }, []);
 
   return (
     <div className="container my-5">
+
       <h2 className="mb-4 text-center">
         Popular Restaurants Near You
       </h2>
@@ -42,9 +48,18 @@ const RestaurantsSection = () => {
           No restaurants available.
         </p>
       ) : (
+
         <div className="row g-4 justify-content-center">
+
           {restaurants.map((item) => (
-            <div key={item.id} className="col-12 col-md-3 col-lg-3">
+
+            <div
+              key={item.id}
+              className="col-12 col-md-3 col-lg-3"
+              onClick={() => navigate(`/restaurant/${item.id}`)}
+              style={{ cursor: "pointer" }}
+            >
+
               <CommonCard
                 title={item.name}
                 desc={item.description}
@@ -55,10 +70,15 @@ const RestaurantsSection = () => {
                 }
                 showOverlay={false}
               />
+
             </div>
+
           ))}
+
         </div>
+
       )}
+
     </div>
   );
 };
